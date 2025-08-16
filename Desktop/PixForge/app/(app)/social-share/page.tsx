@@ -128,7 +128,7 @@ export default function SocialShare() {
                     </div>
                   )}
                   {transformedImageUrl && (
-                    <image
+                    <img
                       src={transformedImageUrl}
                       alt="transformed preview"
                       ref={imageRef}
