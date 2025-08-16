@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import Image from "next/image";
 
 const socialFormats = {
   "Instagram Square (1:1)": { width: 1080, height: 1080, aspectRatio: "1:1" },
@@ -20,10 +19,12 @@ export default function SocialShare() {
   );
   const [isUploading, setIsUploading] = useState(false);
   const [isTransforming, setIsTransforming] = useState(false);
+  const imageRef = useRef<HTMLImageElement>(null); // Correct type
 
-  // Set transforming state when image or format changes
   useEffect(() => {
-    if (uploadedImage) setIsTransforming(true);
+    if (uploadedImage) {
+      setIsTransforming(true);
+    }
   }, [selectedFormat, uploadedImage]);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,19 +54,19 @@ export default function SocialShare() {
   };
 
   const handleDownload = () => {
-    if (!uploadedImage) return;
+    if (!imageRef.current) return;
 
-    const url = `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload/c_fill,w_${socialFormats[selectedFormat].width},h_${socialFormats[selectedFormat].height},g_auto/${uploadedImage}.png`;
-
-    fetch(url)
-      .then((res) => res.blob())
+    fetch(imageRef.current.src)
+      .then((response) => response.blob())
       .then((blob) => {
+        const url = window.URL.createObjectURL(blob);
         const link = document.createElement("a");
-        link.href = window.URL.createObjectURL(blob);
+        link.href = url;
         link.download = `${selectedFormat.replace(/\s+/g, "_").toLowerCase()}.png`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
       });
   };
 
@@ -124,12 +125,11 @@ export default function SocialShare() {
                     </div>
                   )}
                   {transformedImageUrl && (
-                    <Image
+                    <img
                       src={transformedImageUrl}
                       alt="transformed preview"
-                      width={socialFormats[selectedFormat].width}
-                      height={socialFormats[selectedFormat].height}
-                      onLoadingComplete={() => setIsTransforming(false)}
+                      ref={imageRef} // Correct ref
+                      onLoad={() => setIsTransforming(false)}
                       className="max-w-full h-auto border"
                     />
                   )}
