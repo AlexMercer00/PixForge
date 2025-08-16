@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 
 const socialFormats = {
   "Instagram Square (1:1)": { width: 1080, height: 1080, aspectRatio: "1:1" },
@@ -19,13 +20,10 @@ export default function SocialShare() {
   );
   const [isUploading, setIsUploading] = useState(false);
   const [isTransforming, setIsTransforming] = useState(false);
-  const imageRef = useRef<HTMLImageElement>(null);
 
   // Set transforming state when image or format changes
   useEffect(() => {
-    if (uploadedImage) {
-      setIsTransforming(true);
-    }
+    if (uploadedImage) setIsTransforming(true);
   }, [selectedFormat, uploadedImage]);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -46,7 +44,6 @@ export default function SocialShare() {
 
       const data = await response.json();
       setUploadedImage(data.publicId); // Store Cloudinary publicId
-
     } catch (error) {
       console.error(error);
       alert("Failed to upload image");
@@ -56,23 +53,22 @@ export default function SocialShare() {
   };
 
   const handleDownload = () => {
-    if (!imageRef.current) return;
+    if (!uploadedImage) return;
 
-    fetch(imageRef.current.src)
-      .then((response) => response.blob())
+    const url = `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload/c_fill,w_${socialFormats[selectedFormat].width},h_${socialFormats[selectedFormat].height},g_auto/${uploadedImage}.png`;
+
+    fetch(url)
+      .then((res) => res.blob())
       .then((blob) => {
-        const url = window.URL.createObjectURL(blob);
         const link = document.createElement("a");
-        link.href = url;
+        link.href = window.URL.createObjectURL(blob);
         link.download = `${selectedFormat.replace(/\s+/g, "_").toLowerCase()}.png`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
       });
   };
 
-  // Generate Cloudinary URL for preview based on selected format
   const transformedImageUrl = uploadedImage
     ? `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload/c_fill,w_${socialFormats[selectedFormat].width},h_${socialFormats[selectedFormat].height},g_auto/${uploadedImage}.png`
     : null;
@@ -128,11 +124,12 @@ export default function SocialShare() {
                     </div>
                   )}
                   {transformedImageUrl && (
-                    <img
+                    <Image
                       src={transformedImageUrl}
                       alt="transformed preview"
-                      ref={imageRef}
-                      onLoad={() => setIsTransforming(false)}
+                      width={socialFormats[selectedFormat].width}
+                      height={socialFormats[selectedFormat].height}
+                      onLoadingComplete={() => setIsTransforming(false)}
                       className="max-w-full h-auto border"
                     />
                   )}
